@@ -24,7 +24,7 @@ else:
 
 YOUR_DOMAIN = 'https://falra.net/buy/'
 @app.get("/checkout")
-def checkout(price_id:str):
+def checkout(price_id: str, type:str):
     try:
         checkout_session = stripe.checkout.Session.create(
             line_items=[
@@ -34,14 +34,14 @@ def checkout(price_id:str):
                     'quantity': 1,
                 },
             ],
-            mode='payment',
+            mode=type,
             success_url=YOUR_DOMAIN + '/success.html',
             cancel_url=YOUR_DOMAIN + '/cancel.html',
         )
     except Exception as e:
         return str(e)
 
-    return RedirectResponse(url = checkout_session.url, code=303)
+    return RedirectResponse(url=checkout_session.url)
 
 
 if __name__ == "__main__":
