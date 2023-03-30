@@ -17,7 +17,7 @@ templates = Jinja2Templates(directory="templates")
 def main():
     return 'Hello'
 
-if os.getenv("STRIPE_SECRET_KEY") != '':
+if os.getenv("STRIPE_SECRET_KEY") is not None:
     stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 else:
     stripe.api_key = open('stripe_secret_key_test','r').read()
