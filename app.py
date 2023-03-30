@@ -57,3 +57,8 @@ def checkout(price_id:str):
         return str(e)
 
     return RedirectResponse(url = checkout_session.url, code=303)
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
