@@ -3,14 +3,10 @@ from typing import Optional
 import httpx
 from fastapi import FastAPI, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
-import models
 import stripe
 import os
 
 app = FastAPI()
-
-templates = Jinja2Templates(directory="templates")
 
 
 @app.get("/")
