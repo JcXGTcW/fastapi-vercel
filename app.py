@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 import httpx
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 import models
@@ -22,9 +22,13 @@ if os.getenv("STRIPE_SECRET_KEY") is not None:
 else:
     stripe.api_key = open('stripe_secret_key_test','r').read()
 
-YOUR_DOMAIN = 'https://falra.net/buy/'
-@app.get("/checkout")
-def checkout(price_id: str, type:str):
+
+@app.post("/checkout")
+async def checkout(price_id: str = Form(...),
+                   type: str = Form(...),
+                   success_url: str = Form(...),
+                   cancel_url: str = Form(...),
+                   token: str = Form(...)):
     try:
         checkout_session = stripe.checkout.Session.create(
             line_items=[
@@ -35,13 +39,13 @@ def checkout(price_id: str, type:str):
                 },
             ],
             mode=type,
-            success_url=YOUR_DOMAIN + '/success.html',
-            cancel_url=YOUR_DOMAIN + '/cancel.html',
+            success_url=success_url , # + f'?token={token}'
+            cancel_url=cancel_url # + f'?token={token}'
         )
     except Exception as e:
         return str(e)
 
-    return RedirectResponse(url=checkout_session.url)
+    return RedirectResponse(url=checkout_session.url, status_code=302)
 
 
 if __name__ == "__main__":
