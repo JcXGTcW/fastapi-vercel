@@ -1,41 +1,30 @@
-from datetime import datetime
-from typing import Optional
-import httpx
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-import models
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import PlainTextResponse
+from linebot import LineBotApi, WebhookHandler
+from linebot.exceptions import InvalidSignatureError
+from linebot.models import MessageEvent, TextMessage, TextSendMessage
 
 app = FastAPI()
+CHANNEL_TOKEN = open('keys/linechannelaccess').read()
+CHANNEL_SECRET = open('keys/linechannelsecret').read()
+line_bot_api = LineBotApi(CHANNEL_TOKEN)
+handler = WebhookHandler(CHANNEL_SECRET)
 
-templates = Jinja2Templates(directory="templates")
+@app.post("/callback")
+async def callback(request: Request):
+    # get X-Line-Signature header value
+    signature = request.headers.get('X-Line-Signature')
+    # get request body as text
+    body = await request.body()
+    # handle webhook body
+    try:
+        handler.handle(body.decode('utf-8'), signature)
+    except InvalidSignatureError:
+        raise HTTPException(status_code=400, detail="Invalid signature")
+    return PlainTextResponse('OK')
 
-
-@app.get("/", response_class=HTMLResponse)
-def index(request: Request, username: str = None):
-    if not username:
-        return templates.TemplateResponse("index.html", context={"request": request})
-
-    user = get_github_profile(request, username)
-
-    context = {"request": request, "user": user}
-
-    return templates.TemplateResponse("index.html", context=context)
-
-
-@app.get("/{username}", response_model=models.GithubUserModel)
-def get_github_profile(request: Request, username: str) -> Optional[models.GithubUserModel]:
-
-    headers = {"accept": "application/vnd.github.v3+json"}
-
-    response = httpx.get(f"https://api.github.com/users/{username}", headers=headers)
-
-    if response.status_code == 404:
-        return False
-
-    user = models.GithubUserModel(**response.json())
-
-    # Sobreescribir la fecha con el formato que necesitamos
-    user.created_at = datetime.strptime(user.created_at, "%Y-%m-%dT%H:%M:%SZ").strftime("%d/%m/%y")
-
-    return user
+@handler.add(MessageEvent, message=TextMessage)
+async def handle_message(event):
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=event.message.text))
